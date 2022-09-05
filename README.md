@@ -1,92 +1,97 @@
-# Reference ECC Brainpool
+![gematik logo](images/gematik_logo.png)
 
+# Using Brainpool Curves in Elliptic Curve Cryptography for the Telematics Infrastructure
 
+In order to migrate from cryptographic methods using RSA to those that use ECC in the Telematics Infrastructure (TI) our specifications require the use of brainpool curves. Unfortunately many software frameworks do not support brainpool curve parameters according to RFC-5639. In this article we provide code examples and links to projects in which cryptographic methods using ECC and brainpool curves are applied. They are intended to serve as a guideline for producers of TI products struggling with the implementation. In the medium-term gematik will allow the use of NIST curves in the TI which are supported by software frameworks more frequently.
 
-## Getting started
+We provide examples for the following programming languages and tool frameworks:
+- [Java and SpringBoot](#java-and-springboot)
+- [Netty](#netty)
+- [Android](#android)
+- [iOS](#ios)
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Java and SpringBoot
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Example code for Java (plain) and Spring Boot can be found in our project PKI Testsuite (https://github.com/gematik/app-PkiTestsuite). We use Bouncy Castle (https://www.bouncycastle.org/) in order to make Java-based applications support ECC with Brainpool curves. Our configuration ensures that the BouncyCastle SecurityProviders are registered with the application and are first in the list of SecurityProviders. Additionally PKIX has to be set as algorithm for the KeyManagerFactory and the system property jdk.tls.namedGroups needs to be set to the following value: brainpoolP256r1, brainpoolP384r1, brainpoolP512r1
 
-## Add your files
+In our example code the configuration is placed into a static code block.
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+    static {
+        System.setProperty("jdk.tls.namedGroups", "brainpoolP256r1, brainpoolP384r1, brainpoolP512r1");
+        Security.setProperty("ssl.KeyManagerFactory.algorithm", "PKIX");
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        Security.removeProvider(BouncyCastleJsseProvider.PROVIDER_NAME);
+        Security.insertProviderAt(new BouncyCastleJsseProvider(), 2);
+    }
 
-```
-cd existing_repo
-git remote add origin https://gitlab.prod.ccs.gematik.solutions/git/Testtools/reference-ecc-brainpool.git
-git branch -M main
-git push -uf origin main
-```
+An example on how to configure a Java TLS client for ECC with Brainpool curves can be found at https://github.com/gematik/app-PkiTestsuite/blob/master/pkits-tls-client/src/main/java/de/gematik/pki/pkits/tls/client/TlsConnection.java.
 
-## Integrate with your tools
+A TLS server example using SpringBoot is available under https://github.com/gematik/app-PkiTestsuite/blob/master/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/PkiSutServerSimApplication.java.
 
-- [ ] [Set up project integrations](https://gitlab.prod.ccs.gematik.solutions/git/Testtools/reference-ecc-brainpool/-/settings/integrations)
+## Netty
+Configuring Netty for Elliptic Curve Cryptography with brainpool curves is pretty straight forward using the BouncyCastle library (Provider and DTLS/TLS API/JSSE Provider, see [Bouncy Castle Latest Java Releases](https://www.bouncycastle.org/latest_releases.html)). The code excerpt below shows how an SslContext object can be generated that supports the cipher suites currently required by our specifications:
 
-## Collaborate with your team
+<pre><code>
+    /**
+     * Generates an SslObject using BouncyCastle as TLS provider for ECC and brainpool curves.
+     * @param keyManagerFactory KeyManagerFactory for the server key material.
+     * @param trustManagerFactory TrustManagerFactory for the trust store.
+     * @return An SslObject using BouncyCastle as TLS provider for ECC and brainpool curves.
+     * @throws SSLException In case the SslObject cannot be created.
+     */
+    public SslContext createSslContextForEccBrainpool(KeyManagerFactory keyManagerFactory,
+                                                      TrustManagerFactory trustManagerFactory) throws SSLException {
+        // FIPS mode is not required when instantiating the BouncyCastleJsseProvider (b=false)
+        Provider sslContextProvider = new BouncyCastleJsseProvider(false, new BouncyCastleProvider());
+        List<String> cipherSuiteList = Arrays.asList("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
+        return SslContextBuilder.forServer(keyManagerFactory)
+                .sslProvider(SslProvider.JDK)
+                .sslContextProvider(sslContextProvider)
+                .trustManager(trustManagerFactory)
+                .ciphers(cipherSuiteList)
+                .clientAuth(ClientAuth.REQUIRE)
+                .build();
+    }
+</code></pre>
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+From the SslContext that is created that way an SslEngine can be obtained using one of the *newEngine* methods. The SslEngine object can in turn be used to create an SslHandler.
 
-## Test and Deploy
+Please note that the KeyManagerFactoryObject should also be created using the BouncyCastleTlsProvider.
 
-Use the built-in continuous integration in GitLab.
+<pre><code>
+    KeyManagerFactory.getInstance("PKIX", new BouncyCastleJsseProvider(false, new BouncyCastleProvider());
+</code></pre>
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+## E-Rezept
+### Android
 
-***
+All cryptographic operations in the E-Rezept Android App (https://github.com/gematik/E-Rezept-App-Android) are implemented with [BouncyCastle](https://www.bouncycastle.org/).
 
-# Editing this README
+- The VAU (Vertrauenswürdigen Ausführungsumgebung) bundles some useful utility functions for handling certificates and ocsp responses in general: [CertUtils.kt, OCSPUtils.kt, ...](https://github.com/gematik/E-Rezept-App-Android/tree/master/android/src/main/java/de/gematik/ti/erp/app/vau). The actual ECIES implementation can be found in Crypto.kt
+- NFC resides in [.../de/gematik/ti/erp/app/cardwall/model/nfc](https://github.com/gematik/E-Rezept-App-Android/tree/master/android/src/main/java/de/gematik/ti/erp/app/cardwall/model/nfc) and is used in [AuthenticationUseCaseProduction.kt](https://github.com/gematik/E-Rezept-App-Android/blob/master/android/src/main/java/de/gematik/ti/erp/app/cardwall/usecase/AuthenticationUseCaseProduction.kt)
+- Token encryption utilizes [jose4j](https://bitbucket.org/b_c/jose4j/wiki/Home). To enable ECC Brainpool support we inject the curves manually through reflection in [EllipticCurvesExtending.kt](https://github.com/gematik/E-Rezept-App-Android/blob/master/android/src/main/java/de/gematik/ti/erp/app/idp/EllipticCurvesExtending.kt)
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!).  Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### iOS
+For cryptographic operations that are not provided by the SDK (for example that involve Brainpool*-curves) the E-Rezept iOS App (https://github.com/gematik/E-Rezept-App-iOS) use a [Swift extension wrapper](https://github.com/gematik/OpenSSL-Swift) with embedded OpenSSL.
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+This Xcode-project downloads, compiles and embeds a current OpenSSL version 3.x.y in a Swift framework that can be included in MacOS/iOS Frameworks and Apps. Supported actions include:
+- X.509 Certificate
+- OCSP Responses
+- Cryptographic Message Syntax (CMS)
+- Key Management
+- ECDH Shared Secret computation
+- MAC calculation
 
-## Name
-Choose a self-explaining name for your project.
+For usage examples refer to: https://github.com/gematik/OpenSSL-Swift/blob/master/README.md
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+We make usage of our framework in multiple cases:
+- [VAU (vertrauenswürdigen Ausführungsumgebung)](https://github.com/gematik/E-Rezept-App-iOS/blob/master/Sources/VAU/internal/VAUCrypto.swift)
+- [Kartenkommunikation (PACE)](https://github.com/gematik/ref-OpenHealthCardKit/blob/master/Sources/HealthCardControl/SecureMessaging/KeyAgreement.swift)
+- [Tokenverschlüsselung](https://github.com/gematik/E-Rezept-App-iOS/blob/master/Sources/IDP/internal/IDPCrypto.swift)
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+References:
+- https://github.com/gematik/OpenSSL-Swift
+- https://github.com/gematik/E-Rezept-App-iOS
+- https://github.com/gematik/ref-OpenHealthCardKit
