@@ -1,2 +1,7 @@
-Jenkinsfile
+/.idea/
+**/*.iml
+*.iml
+/target/
+/*/target/
 
+Jenkinsfile
