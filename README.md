@@ -1,6 +1,30 @@
-![gematik logo](images/gematik_logo.png)
+<img align="right" width="250" height="47" src="Gematik_Logo_Flag_With_Background.png"/> <br/> 
 
 # Using Brainpool Curves in Elliptic Curve Cryptography for the Telematics Infrastructure
+
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+       <ul>
+        <li><a href="#release-notes">Release Notes</a></li>
+      </ul>
+	</li>
+    <li><a href="#java-and-springboot">Java and SpringBoot</a></li>
+    <li><a href="#netty">Netty</a></li>
+    <li>
+      <a href="#e-rezept">E-Rezept</a>
+       <ul>
+        <li><a href="#android">Android</a></li>
+        <li><a href="#ios">iOS</a></li>
+      </ul>
+	</li>
+    <li><a href="#license">License</a></li>
+  </ol>
+</details>
+
+## About The Project
 
 In order to migrate from cryptographic methods using RSA to those that use ECC in the Telematics Infrastructure (TI) our specifications require the use of brainpool curves. Unfortunately many software frameworks do not support brainpool curve parameters according to RFC-5639. In this article we provide code examples and links to projects in which cryptographic methods using ECC and brainpool curves are applied. They are intended to serve as a guideline for producers of TI products struggling with the implementation. In the medium-term gematik will allow the use of NIST curves in the TI which are supported by software frameworks more frequently.
 
@@ -9,6 +33,9 @@ We provide examples for the following programming languages and tool frameworks:
 - [Netty](#netty)
 - [Android](#android)
 - [iOS](#ios)
+
+### Release Notes
+See [ReleaseNotes.md](./ReleaseNotes.md) for all information regarding the (newest) releases.
 
 ## Java and SpringBoot
 
@@ -95,3 +122,17 @@ References:
 - https://github.com/gematik/OpenSSL-Swift
 - https://github.com/gematik/E-Rezept-App-iOS
 - https://github.com/gematik/ref-OpenHealthCardKit
+
+## License
+
+Copyright 2023 gematik GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+
+See the [LICENSE](./LICENSE) for the specific language governing permissions and limitations under the License.
+
+Unless required by applicable law the software is provided "as is" without warranty of any kind, either express or implied, including, but not limited to, the warranties of fitness for a particular purpose, merchantability, and/or non-infringement. The authors or copyright holders shall not be liable in any manner whatsoever for any damages or other claims arising from, out of or in connection with the software or the use or other dealings with the software, whether in an action of contract, tort, or otherwise.
+
+The software is the result of research and development activities, therefore not necessarily quality assured and without the character of a liable product. For this reason, gematik does not provide any support or other user assistance (unless otherwise stated in individual cases and without justification of a legal obligation). Furthermore, there is no claim to further development and adaptation of the results to a more current state of the art.
+
+Gematik may remove published results temporarily or permanently from the place of publication at any time without prior notice or justification.
