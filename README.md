@@ -39,22 +39,22 @@ See [ReleaseNotes.md](./ReleaseNotes.md) for all information regarding the (newe
 
 ## Java and SpringBoot
 
-Example code for Java (plain) and Spring Boot can be found in our project PKI Testsuite (https://github.com/gematik/app-PkiTestsuite). We use Bouncy Castle (https://www.bouncycastle.org/) in order to make Java-based applications support ECC with Brainpool curves. Our configuration ensures that the BouncyCastle SecurityProviders are registered with the application and are first in the list of SecurityProviders. Additionally PKIX has to be set as algorithm for the KeyManagerFactory and the system property jdk.tls.namedGroups needs to be set to the following value: brainpoolP256r1, brainpoolP384r1, brainpoolP512r1
+Example code for Java (plain) and Spring Boot can be found in our project PKI Testsuite (https://github.com/gematik/app-PkiTestsuite). We use Bouncy Castle (https://www.bouncycastle.org/) in order to make Java-based applications support ECC with Brainpool curves. Our configuration ensures that the BouncyCastle SecurityProviders are registered with the application and are first in the list of SecurityProviders. Additionally PKIX has to be set as algorithm for the KeyManagerFactory and the system property jdk.tls.namedGroups needs to be set to the following value: brainpoolP256r1, brainpoolP384r1, brainpoolP512r1, secp256r1, secp384r1
 
 In our example code the configuration is placed into a static code block.
 
-    static {
-        System.setProperty("jdk.tls.namedGroups", "brainpoolP256r1, brainpoolP384r1, brainpoolP512r1");
-        Security.setProperty("ssl.KeyManagerFactory.algorithm", "PKIX");
-        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
-        Security.removeProvider(BouncyCastleJsseProvider.PROVIDER_NAME);
-        Security.insertProviderAt(new BouncyCastleJsseProvider(), 2);
-    }
+  static {
+      System.setProperty("jdk.tls.namedGroups", "brainpoolP256r1, brainpoolP384r1, brainpoolP512r1, secp256r1, secp384r1");
+      Security.setProperty("ssl.KeyManagerFactory.algorithm", "PKIX");
+      Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+      Security.insertProviderAt(new BouncyCastleProvider(), 1);
+      Security.removeProvider(BouncyCastleJsseProvider.PROVIDER_NAME);
+      Security.insertProviderAt(new BouncyCastleJsseProvider(), 2);
+  }
 
-An example on how to configure a Java TLS client for ECC with Brainpool curves can be found at https://github.com/gematik/app-PkiTestsuite/blob/master/pkits-tls-client/src/main/java/de/gematik/pki/pkits/tls/client/TlsConnection.java.
+An example on how to configure a Java TLS client for ECC with Brainpool curves can be found at https://github.com/gematik/app-PkiTestsuite/blob/2.2.0/pkits-tls-client/src/main/java/de/gematik/pki/pkits/tls/client/TlsConnection.java.
 
-A TLS server example using SpringBoot is available under https://github.com/gematik/app-PkiTestsuite/blob/master/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/PkiSutServerSimApplication.java.
+A TLS server example using SpringBoot is available under https://github.com/gematik/app-PkiTestsuite/blob/2.2.0/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/PkiSutServerSimApplication.java.
 
 ## Netty
 Configuring Netty for Elliptic Curve Cryptography with brainpool curves is pretty straight forward using the BouncyCastle library (Provider and DTLS/TLS API/JSSE Provider, see [Bouncy Castle Latest Java Releases](https://www.bouncycastle.org/latest_releases.html)). The code excerpt below shows how an SslContext object can be generated that supports the cipher suites currently required by our specifications:
