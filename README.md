@@ -43,6 +43,7 @@ Example code for Java (plain) and Spring Boot can be found in our project PKI Te
 
 In our example code the configuration is placed into a static code block.
 
+<pre><code>
   static {
       System.setProperty("jdk.tls.namedGroups", "brainpoolP256r1, brainpoolP384r1, brainpoolP512r1, secp256r1, secp384r1");
       Security.setProperty("ssl.KeyManagerFactory.algorithm", "PKIX");
@@ -51,6 +52,7 @@ In our example code the configuration is placed into a static code block.
       Security.removeProvider(BouncyCastleJsseProvider.PROVIDER_NAME);
       Security.insertProviderAt(new BouncyCastleJsseProvider(), 2);
   }
+</code></pre>  
 
 An example on how to configure a Java TLS client for ECC with Brainpool curves can be found at https://github.com/gematik/app-PkiTestsuite/blob/2.2.0/pkits-tls-client/src/main/java/de/gematik/pki/pkits/tls/client/TlsConnection.java.
 
